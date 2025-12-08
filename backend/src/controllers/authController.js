@@ -34,7 +34,7 @@ exports.register = async (req, res) => {
         // Create JWT token
         const token = jwt.sign(
           { id: result.id, email },
-          process.env.JWT_SECRET,
+          3600 * 24 * 7 ,
           { expiresIn: process.env.JWT_EXPIRES_IN }
         );
 
