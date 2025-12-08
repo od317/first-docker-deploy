@@ -1,0 +1,28 @@
+services:
+  backend:
+    build: ./backend
+    container_name: auth-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=development
+      - JWT_SECRET=your_super_secret_key_change_this
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    command: node index.js
+
+  frontend:
+    build: ./frontend
+    container_name: auth-frontend
+    ports:
+      - "3000:3000"  # Changed to match Dockerfile EXPOSE
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    command: npm run dev
