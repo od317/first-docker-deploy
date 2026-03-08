@@ -34,10 +34,17 @@ const app = express();
 const server = http.createServer(app);
 
 // CORS for development (adjust for production)
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://first-docker-deploy.onrender.com",
+  "http://frontend:3000",
+];
+
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://frontend:3000"],
-    credentials: true,
+    origin: allowedOrigins,
+    credentials: true, // This is critical!
+    optionsSuccessStatus: 200,
   }),
 );
 
@@ -105,8 +112,10 @@ app.get("/api/init-db", async (req, res) => {
 // WebSocket setup
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://frontend:3000"],
+    origin: allowedOrigins, // Use the same array
     methods: ["GET", "POST"],
+    credentials: true, // This is critical for Socket.io too!
+    allowedHeaders: ["Content-Type", "Authorization"],
   },
   // Production optimizations
   pingTimeout: 60000,
@@ -115,6 +124,8 @@ const io = new Server(server, {
     maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
     skipMiddlewares: true,
   },
+  transports: ["polling", "websocket"], // Allow both
+  allowEIO3: true,
 });
 
 // WebSocket connection handling

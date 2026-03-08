@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Chat Test</title>
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+  </head>
+  <body>
+    <h2>Render Chat Test</h2>
+    <div>
+      <input id="message" placeholder="Type message" />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+    <div
+      id="messages"
+      style="
+        margin-top: 20px;
+        border: 1px solid #ccc;
+        padding: 10px;
+        height: 300px;
+        overflow-y: scroll;
+      "
+    ></div>
+
+    <script>
+      const socket = io("https://first-docker-deploy.onrender.com");
+      const messagesDiv = document.getElementById("messages");
+
+      socket.on("connect", () => {
+        addMessage("System", "Connected! ID: " + socket.id);
+        socket.emit("join_room", "general");
+      });
+
+      socket.on("message_history", (data) => {
+        addMessage(
+          "System",
+          `Loaded ${data.messages.length} previous messages`,
+        );
+        data.messages.forEach((msg) => {
+          addMessage(msg.username || msg.sender, msg.content);
+        });
+      });
+
+      socket.on("receive_message", (data) => {
+        addMessage(data.username || data.sender, data.message);
+      });
+
+      socket.on("user_joined", (data) => {
+        addMessage("System", "User joined: " + data.userId);
+      });
+
+      function sendMessage() {
+        const input = document.getElementById("message");
+        const msg = input.value;
+        if (msg) {
+          socket.emit("send_message", {
+            roomId: "general",
+            message: msg,
+            sender: "WebTester",
+            userId: "22222222-2222-2222-2222-222222222222",
+            username: "testuser",
+          });
+          input.value = "";
+        }
+      }
+
+      function addMessage(sender, text) {
+        const div = document.createElement("div");
+        div.innerHTML = `<strong>${sender}:</strong> ${text}`;
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+    </script>
+  </body>
+</html>

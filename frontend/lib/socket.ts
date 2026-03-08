@@ -1,7 +1,7 @@
 import { io, Socket } from "socket.io-client";
 
 // Get WebSocket URL from environment or use default
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000";
 const IS_DEV = process.env.NODE_ENV === "development";
 
 interface ConnectionOptions {
@@ -34,7 +34,6 @@ class SocketService {
       return this.socket;
     }
 
-    // Store options for reconnection
     this.connectionOptions = {
       autoReconnect: true,
       ...options,
@@ -42,19 +41,26 @@ class SocketService {
 
     const { userId, username, autoReconnect } = this.connectionOptions;
 
-    IS_DEV && console.log(`🔗 Connecting to WebSocket: ${WS_URL}`);
+    // Log the URL we're connecting to
+    console.log(`🔗 Connecting to WebSocket: ${WS_URL}`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
 
     this.socket = io(WS_URL, {
       reconnection: autoReconnect !== false,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      timeout: 20000,
+      reconnectionAttempts: 10, // Increase attempts
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+      timeout: 30000, // Increase timeout
       auth: {
         userId: userId || `anonymous-${Date.now()}`,
         username: username || "Anonymous",
       },
-      transports: ["websocket", "polling"], // Fallback for different environments
+      // Important: For Render, try polling first then websocket
+      transports: ["polling", "websocket"],
+      // Add these for better compatibility
+      withCredentials: true,
+      forceNew: true,
+      path: "/socket.io",
     });
 
     this.setupEventListeners();
@@ -93,7 +99,7 @@ class SocketService {
     message: string,
     sender: string,
     userId?: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ): void {
     if (!this.socket?.connected) {
       IS_DEV && console.warn("Cannot send message: socket not connected");
@@ -107,7 +113,7 @@ class SocketService {
 
     IS_DEV &&
       console.log(
-        `📤 Sending message to ${roomId}: ${message.substring(0, 50)}...`
+        `📤 Sending message to ${roomId}: ${message.substring(0, 50)}...`,
       );
 
     this.socket?.emit("send_message", {
@@ -137,7 +143,7 @@ class SocketService {
         this.socket?.emit("typing", { roomId, isTyping });
         this.typingTimeout = null;
       },
-      isTyping ? 0 : 100
+      isTyping ? 0 : 100,
     ); // Immediate start, delayed stop
   }
 
@@ -223,7 +229,7 @@ class SocketService {
         console.log(
           `⌨️ User ${data.userId} is ${
             data.isTyping ? "typing" : "stopped typing"
-          }`
+          }`,
         );
     });
   }
