@@ -1,28 +1,52 @@
+version: '3.8'
 services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: chatapp
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
   backend:
     build: ./backend
-    container_name: auth-backend
     ports:
       - "8000:8000"
     environment:
       - NODE_ENV=development
-      - JWT_SECRET=your_super_secret_key_change_this
+      - DATABASE_URL=postgresql://admin:secret@postgres:5432/chatapp
+      - REDIS_URL=redis://redis:6379
+      - NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000  # For CORS
+      - FRONTEND_URL=http://frontend:3000  # ✅ Add this for CORS
+
     volumes:
-      - ./backend:/usr/src/app
-      - /usr/src/app/node_modules
-    command: node index.js
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
 
   frontend:
-    build: ./frontend
-    container_name: auth-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev  # Create a dev Dockerfile
     ports:
-      - "3000:3000"  # Changed to match Dockerfile EXPOSE
+      - "3000:3000"
     environment:
-      - NODE_ENV=development
+      - NEXT_PUBLIC_WS_URL=ws://backend:8000  # Use service name
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8000  # ✅ Use localhost for Docker networking
+      - NEXT_PUBLIC_API_URL=http://backend:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules
       - /app/.next
-    depends_on:
-      - backend
     command: npm run dev
+
+volumes:
+  postgres_data:

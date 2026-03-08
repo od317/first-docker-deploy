@@ -84,6 +84,24 @@ app.get("/api/users/:userId", async (req, res) => {
   }
 });
 
+app.get("/api/init-db", async (req, res) => {
+  // Add a secret key for security (you can remove this after initialization)
+  const initKey = req.query.key;
+  if (initKey !== process.env.DB_INIT_KEY) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    // Import your init function
+    const { initDatabase } = require("./init-db");
+    await initDatabase();
+    res.json({ success: true, message: "Database initialized successfully!" });
+  } catch (error) {
+    console.error("Init error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // WebSocket setup
 const io = new Server(server, {
   cors: {

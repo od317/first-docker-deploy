@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <h2>WebSocket Connection Test</h2>
+  <button onclick="testConnection()">Test Connection</button>
+  <div id="output"></div>
+  
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <script>
+    function testConnection() {
+      const output = document.getElementById('output');
+      output.innerHTML = '<p>Connecting to WebSocket server...</p>';
+      
+      const socket = io('http://localhost:8000');
+      
+      socket.on('connect', () => {
+        output.innerHTML += `<p>✅ Connected! Socket ID: ${socket.id}</p>`;
+        
+        // Join room
+        socket.emit('join_room', 'test-room');
+        output.innerHTML += '<p>✅ Joined test room</p>';
+        
+        // Send test message
+        socket.emit('send_message', {
+          roomId: 'test-room',
+          message: 'Hello from connection test!',
+          sender: 'TestUser',
+          userId: 'test-123'
+        });
+        output.innerHTML += '<p>✅ Test message sent</p>';
+      });
+      
+      socket.on('receive_message', (data) => {
+        output.innerHTML += `<p>📨 Received: "${data.message}" from ${data.sender}</p>`;
+      });
+      
+      socket.on('connect_error', (error) => {
+        output.innerHTML += `<p>❌ Connection failed: ${error.message}</p>`;
+      });
+    }
+  </script>
+</body>
+</html>
